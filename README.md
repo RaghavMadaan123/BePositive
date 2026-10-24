@@ -15,7 +15,7 @@
 | **Team name** | **Be Positive** |
 | **Institution / incubator** | Indian Institute of Management Kozhikode (IIM Kozhikode), Kerala |
 | **Team leader** | Raghav Madaan (mba25raghavm@iimk.ac.in) |
-| **Team members** | Sayli `[surname]` — `[role]`<br>`[Member 3 name — role]`<br>`[Member 4 name — role]` |
+
 
 ## 2. Project title
 
