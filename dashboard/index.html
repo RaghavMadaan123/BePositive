@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GlucoTwin Clinician Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="vendor/chart.umd.min.js"></script>
+<script src="data.js"></script>
+<style>
+:root{
+  --bg:#F4F6F8; --panel:#FFFFFF; --ink:#14212B; --muted:#5D6B78; --line:#E2E7EC;
+  --accent:#0E7C86; --accent-soft:#E3F3F4; --risk:#D64933; --risk-soft:#FBE9E6;
+  --warn:#E8A33D; --ok:#2E9E6A; --twin:#7A5AF8; --hr:#C2416B; --hrv:#3B82C4; --steps:#8C9BAB;
+  --band:rgba(46,158,106,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F161C; --panel:#162028; --ink:#E6EDF2; --muted:#93A3B1; --line:#253340;
+    --accent:#3CC0C9; --accent-soft:#16343A; --risk:#F06A52; --risk-soft:#3A1F1B;
+    --twin:#A08BFF; --hr:#E46A93; --hrv:#6AAEF0; --steps:#6E7F8F; --band:rgba(46,158,106,.12);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F161C; --panel:#162028; --ink:#E6EDF2; --muted:#93A3B1; --line:#253340;
+  --accent:#3CC0C9; --accent-soft:#16343A; --risk:#F06A52; --risk-soft:#3A1F1B;
+  --twin:#A08BFF; --hr:#E46A93; --hrv:#6AAEF0; --steps:#6E7F8F; --band:rgba(46,158,106,.12);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:14px;line-height:1.45}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+header{display:flex;align-items:center;gap:16px;padding:14px 22px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:-.01em}
+.brand .dot{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--twin));display:grid;place-items:center;color:#fff;font-size:13px}
+.tag{font-size:11px;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:600;letter-spacing:.02em}
+.tabs{margin-left:auto;display:flex;gap:4px}
+.tabs button{border:1px solid var(--line);background:transparent;color:var(--muted);padding:7px 14px;border-radius:8px;font:inherit;cursor:pointer}
+.tabs button.on{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.wrap{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 57px)}
+aside{border-right:1px solid var(--line);background:var(--panel);padding:16px 12px;overflow:auto}
+aside h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:4px 8px 10px}
+.pt{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:10px;border-radius:10px;cursor:pointer;border:1px solid transparent;margin-bottom:4px}
+.pt:hover{background:var(--bg)}
+.pt.on{border-color:var(--accent);background:var(--accent-soft)}
+.pt .nm{font-weight:600}
+.pt .sub{grid-column:1/2;color:var(--muted);font-size:12px}
+.riskpill{grid-row:1/3;grid-column:2;align-self:center;font-weight:700;font-size:13px;padding:5px 9px;border-radius:8px;min-width:52px;text-align:center}
+main{padding:20px 22px 40px;overflow:auto}
+.grid{display:grid;gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.card h2{font-size:13px;margin:0 0 12px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:600;display:flex;align-items:center;gap:8px}
+.card h2 .hint{text-transform:none;letter-spacing:0;font-weight:400;margin-left:auto;font-size:12px}
+.head{display:grid;grid-template-columns:1.3fr 2fr;gap:16px}
+.who h1{font-size:22px;margin:0 0 4px;letter-spacing:-.01em}
+.who .meta{color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font-size:12px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--ink)}
+.chip.med{background:var(--accent-soft);border-color:transparent;color:var(--accent)}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi .l{font-size:11.5px;color:var(--muted)}
+.kpi .v{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-top:2px}
+.kpi .s{font-size:11.5px;color:var(--muted)}
+.kpi.alert{background:var(--risk-soft);border-color:transparent}
+.kpi.alert .v{color:var(--risk)}
+.chartbox{position:relative;height:300px}
+.chartbox.sm{height:170px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:8px}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.bars .row{display:grid;grid-template-columns:200px 1fr 60px;align-items:center;gap:10px;margin:7px 0;font-size:13px}
+.bars .track{height:12px;background:var(--bg);border-radius:6px;position:relative;overflow:hidden}
+.bars .fill{position:absolute;top:0;bottom:0;border-radius:6px}
+.bars .zero{position:absolute;left:30%;top:-3px;bottom:-3px;width:1px;background:var(--muted);opacity:.5}
+.why{margin:12px 0 0;padding:12px 14px;background:var(--bg);border-radius:10px;font-size:13.5px}
+.why b{color:var(--ink)}
+.ctrls{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.ctrl label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:5px}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{flex:1;border:0;background:transparent;color:var(--ink);padding:7px 4px;font:inherit;font-size:12.5px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--accent);color:#fff}
+.seg button:disabled{opacity:.35;cursor:not-allowed}
+.wi-out{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.delta{font-size:12px;font-weight:600}
+.delta.good{color:var(--ok)} .delta.bad{color:var(--risk)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600;font-size:12px}
+tr.best td{font-weight:700;background:var(--accent-soft)}
+.figs{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.figs img{width:100%;border-radius:10px;border:1px solid var(--line);background:#fff}
+.foot{color:var(--muted);font-size:12px;margin-top:18px}
+.hidden{display:none}
+.wrap>*,.grid>*,.head>*,.two>*,.figs>*{min-width:0}
+.chips{overflow:hidden}
+.param{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:6px 10px;font-size:13px}
+.param .h{color:var(--muted);font-size:11.5px}
+@media (max-width: 980px){
+  .wrap{grid-template-columns:1fr}
+  aside{border-right:0;border-bottom:1px solid var(--line);display:flex;gap:6px;overflow-x:auto;padding:10px 16px}
+  aside h3{display:none}
+  #plist{display:flex;gap:6px}
+  .pt{min-width:200px}
+  .who .meta.mono{white-space:normal;word-break:break-word}
+  main{padding:16px}
+  .head,.two,.figs{grid-template-columns:1fr}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .ctrls{grid-template-columns:1fr 1fr}
+  .bars .row{grid-template-columns:120px 1fr 48px}
+  header{padding:12px 16px;flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="dot">GT</div>GlucoTwin</div>
+  <span class="tag">Type 2 Diabetes · 2-hour spike forecast</span>
+  <span class="tag" style="background:var(--risk-soft);color:var(--risk)">Synthetic data · research PoC</span>
+  <div class="tabs">
+    <button id="tab-pt" class="on">Virtual patient</button>
+    <button id="tab-model">Model performance</button>
+  </div>
+</header>
+<div class="wrap">
+  <aside>
+    <h3>Patients · spike risk now (next 2 h)</h3>
+    <div id="plist"></div>
+  </aside>
+  <main>
+    <section id="view-pt" class="grid">
+      <div class="head">
+        <div class="card who" id="who"></div>
+        <div class="card"><div class="kpis" id="kpis"></div></div>
+      </div>
+
+      <div class="card">
+        <h2>Glucose · digital twin · spike risk <span class="hint">last 72 h, 5-min CGM; risk recomputed every 15 min</span></h2>
+        <div class="legend">
+          <span><i style="background:var(--ink)"></i>CGM glucose</span>
+          <span><i style="background:var(--twin)"></i>Twin glucose (synchronised)</span>
+          <span><i style="background:var(--risk);height:8px;opacity:.35"></i>Predicted spike risk (2 h ahead)</span>
+          <span><i style="background:var(--warn);height:8px;width:8px;border-radius:50%"></i>Logged meal</span>
+          <span><i style="border:2px solid var(--twin);height:8px;width:8px;border-radius:50%;background:transparent"></i>Unlogged meal detected by twin</span>
+          <span><i style="background:var(--band);height:8px"></i>Target 70–180 mg/dL</span>
+        </div>
+        <div class="chartbox"><canvas id="cGlu"></canvas></div>
+      </div>
+
+      <div class="two">
+        <div class="card">
+          <h2>Why the latest alert fired <span class="hint" id="whyTime"></span></h2>
+          <div class="bars" id="bars"></div>
+          <div class="why" id="why"></div>
+        </div>
+        <div class="card">
+          <h2>Twin physiology <span class="hint">EHR prior → personalised on 3 onboarding days</span></h2>
+          <div class="param" id="params"></div>
+          <div class="why" id="paramNote"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>What-if simulator <span class="hint" id="wiStart"></span></h2>
+        <div class="ctrls">
+          <div class="ctrl"><label>Tonight's dinner carbohydrate</label><div class="seg" data-k="cut"><button data-v="0" class="on">As usual</button><button data-v="25">−25%</button><button data-v="50">−50%</button></div></div>
+          <div class="ctrl"><label>Walk after dinner</label><div class="seg" data-k="walk"><button data-v="0" class="on">None</button><button data-v="15">15 min</button><button data-v="30">30 min</button></div></div>
+          <div class="ctrl"><label>Sleep tonight</label><div class="seg" data-k="sleep"><button data-v="normal" class="on">Normal</button><button data-v="short">Short / poor</button></div></div>
+          <div class="ctrl"><label>Evening metformin</label><div class="seg" data-k="met"><button data-v="taken" class="on">Taken</button><button data-v="missed">Missed</button></div></div>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--muted)"></i>Habitual plan (twin's learned routine)</span>
+          <span><i style="background:var(--accent)"></i>Selected scenario</span>
+          <span id="wiMeals"></span>
+        </div>
+        <div class="chartbox"><canvas id="cWi"></canvas></div>
+        <div class="wi-out" id="wiOut"></div>
+      </div>
+
+      <div class="two">
+        <div class="card">
+          <h2>Heart rate &amp; HRV <span class="hint">wearable, 5-min</span></h2>
+          <div class="legend"><span><i style="background:var(--hr)"></i>Heart rate (bpm)</span><span><i style="background:var(--hrv)"></i>HRV RMSSD (ms)</span></div>
+          <div class="chartbox sm"><canvas id="cHr"></canvas></div>
+        </div>
+        <div class="card">
+          <h2>Steps &amp; sleep stages</h2>
+          <div class="legend"><span><i style="background:var(--steps)"></i>Steps / 5 min</span><span><i style="background:var(--twin)"></i>Sleep stage (W · Light · Deep · REM)</span></div>
+          <div class="chartbox sm"><canvas id="cAct"></canvas></div>
+        </div>
+      </div>
+      <div class="foot">GlucoTwin is a research proof-of-concept trained on synthetic, privacy-safe data (no real patient data). It is not a medical device and must not be used for clinical decisions.</div>
+    </section>
+
+    <section id="view-model" class="grid hidden">
+      <div class="card">
+        <h2>Held-out evaluation <span class="hint" id="mTask"></span></h2>
+        <table id="mTable"></table>
+        <div class="why" id="mNote"></div>
+      </div>
+      <div class="figs">
+        <div class="card"><h2>ROC &amp; precision-recall</h2><img src="figures/roc_pr_ablation.png" alt="ROC and PR curves"></div>
+        <div class="card"><h2>Calibration</h2><img src="figures/calibration.png" alt="Calibration curve"></div>
+      </div>
+      <div class="card"><h2>Contribution of each data stream</h2><img src="figures/stream_importance.png" alt="Stream importance" style="max-width:720px;width:100%;border-radius:10px"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+const D = window.GT_DATA;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const t0 = new Date(D.t0.replace(' ', 'T'));
+const fmtT = i => { const d = new Date(t0.getTime() + (i + 1) * 5 * 60000);
+  return d.toLocaleDateString('en-IN',{weekday:'short'}) + ' ' + d.toTimeString().slice(0,5); };
+const pct = v => Math.round(v * 100) + '%';
+let cur = null, charts = {}, wi = {cut:'0', walk:'0', sleep:'normal', met:'taken'};
+
+function nowRisk(p){ const r = p.series.risk.filter(x => x[1] !== null); return r.length ? r[r.length-1][1] : 0; }
+function maxRecent(p){ const n = p.series.cgm.length; return Math.max(0, ...p.series.risk.filter(x => x[0] > n - 72 && x[1] !== null).map(x => x[1])); }
+function riskStyle(r){ return r >= D.threshold ? `background:${css('--risk-soft')};color:${css('--risk')}` :
+  r >= D.threshold * 0.6 ? `background:#FFF3DF;color:#9A6200` : `background:${css('--accent-soft')};color:${css('--accent')}`; }
+
+function list(){
+  const ps = [...D.patients].sort((a,b) => nowRisk(b) - nowRisk(a) || maxRecent(b) - maxRecent(a));
+  document.getElementById('plist').innerHTML = ps.map(p => `
+    <div class="pt ${cur && cur.id===p.id?'on':''}" data-id="${p.id}">
+      <div class="nm">${p.name.replace(' (synthetic)','')}</div>
+      <div class="riskpill" style="${riskStyle(nowRisk(p))}" title="Spike risk now (2 h ahead)">${pct(nowRisk(p))}</div>
+      <div class="sub">${p.id} · ${p.group} · TIR ${pct(p.stats.tir)}</div>
+    </div>`).join('');
+  document.querySelectorAll('.pt').forEach(el => el.onclick = () => select(el.dataset.id));
+}
+
+function select(id){
+  cur = D.patients.find(p => p.id === id);
+  list(); who(); kpis(); gluChart(); explain(); params(); wearables(); setupWi(); whatIf();
+}
+
+function who(){
+  const p = cur, e = p.ehr;
+  const flags = [e.hypertension&&'Hypertension', e.dyslipidemia&&'Dyslipidaemia', e.nafld&&'NAFLD', e.family_history&&'Family history T2D'].filter(Boolean);
+  document.getElementById('who').innerHTML = `
+    <h1>${p.name}</h1>
+    <div class="meta">${p.id} · ${p.age} y · ${p.sex==='M'?'Male':'Female'} · ${p.city} · <b>${p.group}</b>${e.duration?` (${e.duration} y)`:''}</div>
+    <div class="meta mono" style="margin-top:6px;font-size:12.5px">HbA1c ${e.hba1c}% · FPG ${e.fpg} · BMI ${e.bmi} · Waist ${e.waist} cm · BP ${e.bp} · eGFR ${e.egfr}</div>
+    <div class="chips">${e.meds.map(m=>`<span class="chip med">${m}</span>`).join('')}${flags.map(f=>`<span class="chip">${f}</span>`).join('')}
+      <span class="chip mono" title="Risk-allele counts">TCF7L2 ${e.genes.TCF7L2} · KCNQ1 ${e.genes.KCNQ1} · FTO ${e.genes.FTO}</span></div>`;
+}
+
+function kpis(){
+  const p = cur, r = nowRisk(p), alert = r >= D.threshold;
+  const nAlerts = p.series.risk.filter(x => x[1] !== null && x[1] >= D.threshold).length;
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi ${alert?'alert':''}"><div class="l">Spike risk · next 2 h</div><div class="v">${pct(r)}</div><div class="s">${alert?'ALERT · act now':'below alert threshold'}</div></div>
+    <div class="kpi"><div class="l">Time in range (72 h)</div><div class="v">${pct(p.stats.tir)}</div><div class="s">target ≥ 70%</div></div>
+    <div class="kpi"><div class="l">GMI</div><div class="v">${p.stats.gmi}%</div><div class="s">mean ${p.stats.mean} mg/dL</div></div>
+    <div class="kpi"><div class="l">Spikes &gt;180 (72 h)</div><div class="v">${p.stats.spikes}</div><div class="s">${nAlerts} alert intervals</div></div>
+    <div class="kpi"><div class="l">Glycaemic variability</div><div class="v">${pct(p.stats.cv)}</div><div class="s">CV; target ≤ 36%</div></div>`;
+}
+
+const base = (every=72) => ({responsive:true, maintainAspectRatio:false, animation:false, interaction:{mode:'index',intersect:false},
+  plugins:{legend:{display:false}, tooltip:{backgroundColor:css('--ink'), titleColor:css('--panel'), bodyColor:css('--panel')}},
+  scales:{x:{grid:{display:false}, ticks:{color:css('--muted'), maxRotation:0, autoSkip:false,
+    callback:(v,i)=> i % every === 0 ? fmtT(i) : ''}}}});
+
+const bandPlugin = {id:'band', beforeDraw(c, a, o){ if(!o.on) return; const {ctx, chartArea:ca, scales:{y}} = c;
+  ctx.save(); ctx.fillStyle = css('--band'); const y1 = y.getPixelForValue(180), y0 = y.getPixelForValue(70);
+  ctx.fillRect(ca.left, y1, ca.right-ca.left, y0-y1); ctx.strokeStyle = css('--risk'); ctx.setLineDash([4,4]); ctx.globalAlpha=.6;
+  ctx.beginPath(); ctx.moveTo(ca.left,y1); ctx.lineTo(ca.right,y1); ctx.stroke(); ctx.restore(); }};
+
+function mk(id, cfg){ if(charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), cfg); }
+
+function gluChart(){
+  const p = cur, n = p.series.cgm.length, labels = [...Array(n).keys()];
+  const risk = new Array(n).fill(0); p.series.risk.forEach(([k,r]) => { for(let j=0;j<3&&k+j<n;j++) risk[k+j] = r === null ? 0 : r; });
+  const logged = new Array(n).fill(null); p.meals.logged.forEach(([k,c]) => logged[k] = p.series.cgm[k]);
+  const det = new Array(n).fill(null); p.meals.detected.forEach(([k,c]) => det[k] = p.series.cgm[k]);
+  const o = base();
+  o.scales.y = {min:40, suggestedMax:320, grid:{color:css('--line')}, ticks:{color:css('--muted')}, title:{display:true,text:'mg/dL',color:css('--muted')}};
+  o.scales.yr = {position:'right', min:0, max:1, grid:{display:false}, ticks:{color:css('--muted'), callback:v=>Math.round(v*100)+'%'}};
+  o.plugins.band = {on:true};
+  o.plugins.tooltip.callbacks = {title:it => fmtT(it[0].dataIndex), label:c => c.dataset.label + ': ' + (c.dataset.yAxisID==='yr' ? pct(c.raw) : c.raw)};
+  mk('cGlu', {type:'line', data:{labels, datasets:[
+    {label:'Spike risk', data:risk, yAxisID:'yr', borderWidth:1, borderColor:css('--risk')+'99', fill:'origin', backgroundColor:css('--risk')+'30', pointRadius:0, stepped:true, order:5},
+    {label:'CGM', data:p.series.cgm, borderColor:css('--ink'), borderWidth:1.6, pointRadius:0, yAxisID:'y'},
+    {label:'Twin', data:p.series.twin, borderColor:css('--twin'), borderWidth:1.3, borderDash:[5,4], pointRadius:0, yAxisID:'y'},
+    {label:'Logged meal', data:logged, showLine:false, pointRadius:5, pointBackgroundColor:css('--warn'), pointBorderColor:css('--panel'), yAxisID:'y'},
+    {label:'Unlogged meal (twin)', data:det, showLine:false, pointRadius:5, pointStyle:'circle', pointBackgroundColor:'transparent', pointBorderColor:css('--twin'), pointBorderWidth:2, yAxisID:'y'},
+  ]}, options:o, plugins:[bandPlugin]});
+}
+
+function explain(){
+  const x = cur.explain, c = x.contributions, f = x.facts;
+  document.getElementById('whyTime').textContent = `${x.time} · risk ${pct(x.risk)}`;
+  const max = Math.max(1, ...Object.values(c).map(Math.abs));
+  document.getElementById('bars').innerHTML = Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([k,v]) => {
+    const w = Math.abs(v)/max*70, left = v >= 0 ? 30 : 30 - w;
+    return `<div class="row"><span>${k}</span><div class="track"><div class="zero"></div><div class="fill" style="left:${left}%;width:${w}%;background:${v>=0?css('--risk'):css('--accent')}"></div></div><span class="mono" style="text-align:right">${v>0?'+':''}${v.toFixed(2)}</span></div>`; }).join('')
+    + `<div style="font-size:11.5px;color:var(--muted)">Change in log-odds of a spike vs. a typical patient when the stream is set to cohort median. Red pushes risk up.</div>`;
+  const parts = [];
+  parts.push(`CGM is <b>${f.cgm_now} mg/dL</b> (${f.slope_15>=0?'+':''}${f.slope_15} mg/dL/min).`);
+  parts.push(`Assuming this patient's usual routine, the twin forecasts a peak of <b>${f.twin_fc_habit_max} mg/dL</b> within 2 h` + (f.twin_fc_nomeal_max>180?`; even with no further food it reaches ${f.twin_fc_nomeal_max} mg/dL (carbs still being absorbed).`:'.'));
+  if (f.twin_meal_prob_2h > 0.5) parts.push(`A meal is <b>habitually due</b> in this window (learned meal-time profile).`);
+  if (f.sleep_hrs_last_night < 6) parts.push(`Only <b>${f.sleep_hrs_last_night} h sleep</b> last night lowers insulin sensitivity today.`);
+  if (f.hrv_rel < 0.85) parts.push(`HRV is ${Math.round((1-f.hrv_rel)*100)}% below baseline (stress / poor recovery).`);
+  parts.push(`<br><b>Suggested action:</b> nudge patient to reduce carbs at the upcoming meal and take a 15–30 min walk after eating; review with the what-if simulator below.`);
+  document.getElementById('why').innerHTML = parts.join(' ');
+}
+
+function params(){
+  const t = cur.twin;
+  const row = (n, a, b, u='') => `<div>${n}</div><div class="mono">${a}${u}</div><div class="mono"><b>${b}${u}</b></div>`;
+  document.getElementById('params').innerHTML = `<div class="h">Parameter</div><div class="h">EHR prior</div><div class="h">Calibrated twin</div>`
+    + row('Insulin sensitivity S<sub>I</sub> (×10⁻⁴)', t.SI_prior, t.SI)
+    + row('β-cell response γ', t.gamma_prior, t.gamma)
+    + row('Basal glucose G<sub>b</sub> (mg/dL)', cur.ehr.fpg, t.Gb)
+    + row('3-day open-loop fit RMSE', t.rmse_prior, t.rmse_cal, ' mg/dL');
+  const r = t.SI / t.SI_prior;
+  document.getElementById('paramNote').innerHTML = `The twin is <b>${r<0.9?'more insulin-resistant':r>1.1?'more insulin-sensitive':'consistent with'}</b> ${r<0.9||r>1.1?'than':''} the EHR suggested. `
+    + `After calibration the virtual patient is kept in sync with every CGM reading (state observer) and detects meals the patient forgot to log (${cur.meals.detected.length} in the last 72 h).`;
+}
+
+function wearables(){
+  const p = cur, n = p.series.hr.length, labels = [...Array(n).keys()];
+  let o = base(144);
+  o.scales.y = {grid:{color:css('--line')}, ticks:{color:css('--muted')}, title:{display:true,text:'bpm',color:css('--muted')}};
+  o.scales.y2 = {position:'right', grid:{display:false}, ticks:{color:css('--muted')}, title:{display:true,text:'ms',color:css('--muted')}};
+  o.plugins.tooltip.callbacks = {title:it => fmtT(it[0].dataIndex)};
+  mk('cHr', {type:'line', data:{labels, datasets:[
+    {label:'HR', data:p.series.hr, borderColor:css('--hr'), borderWidth:1, pointRadius:0, yAxisID:'y'},
+    {label:'HRV', data:p.series.hrv, borderColor:css('--hrv'), borderWidth:1, pointRadius:0, yAxisID:'y2'}]}, options:o});
+  o = base(144);
+  o.scales.y = {grid:{color:css('--line')}, ticks:{color:css('--muted')}};
+  o.scales.ys = {position:'right', min:0, max:3.4, grid:{display:false}, ticks:{color:css('--muted'), stepSize:1, callback:v=>['W','L','D','R'][v]||''}};
+  o.plugins.tooltip.callbacks = {title:it => fmtT(it[0].dataIndex)};
+  const stage = p.series.sleep.map(s => s===0?null:({1:1,2:2,3:3})[s]);
+  mk('cAct', {data:{labels, datasets:[
+    {type:'bar', label:'Steps', data:p.series.steps, backgroundColor:css('--steps'), barPercentage:1, categoryPercentage:1, yAxisID:'y'},
+    {type:'line', label:'Sleep stage', data:stage, borderColor:css('--twin'), borderWidth:1.2, pointRadius:0, stepped:true, yAxisID:'ys', spanGaps:false}]}, options:o});
+}
+
+function setupWi(){
+  const w = cur.whatif;
+  document.querySelectorAll('.seg[data-k="met"] button').forEach(b => b.disabled = !w.on_metformin && b.dataset.v==='missed');
+  if (!w.on_metformin) { wi.met = 'taken'; }
+  document.querySelectorAll('.seg').forEach(s => s.querySelectorAll('button').forEach(b => b.classList.toggle('on', wi[s.dataset.k] === b.dataset.v)));
+  document.getElementById('wiStart').textContent = `24 h from ${w.start} · twin state synchronised to live CGM`;
+  document.getElementById('wiMeals').textContent = 'Planned: ' + w.meals.map(m => `${m.name} ${m.carbs} g`).join(' · ');
+}
+
+function whatIf(){
+  const w = cur.whatif, key = `${wi.cut}|${wi.walk}|${wi.sleep}|${wi.met}`;
+  const b = w.scenarios['0|0|normal|taken'], s = w.scenarios[key];
+  const start = new Date(w.start.replace(' ','T'));
+  const labels = b.g.map((_, i) => i);
+  const o = base();
+  o.scales.x.ticks.callback = (v,i) => i % 36 === 0 ? new Date(start.getTime()+i*300000).toTimeString().slice(0,5) : '';
+  o.scales.y = {min:60, suggestedMax:300, grid:{color:css('--line')}, ticks:{color:css('--muted')}, title:{display:true,text:'mg/dL',color:css('--muted')}};
+  o.plugins.band = {on:true};
+  o.plugins.tooltip.callbacks = {title:it => new Date(start.getTime()+it[0].dataIndex*300000).toTimeString().slice(0,5)};
+  mk('cWi', {type:'line', data:{labels, datasets:[
+    {label:'Habitual', data:b.g, borderColor:css('--muted'), borderWidth:1.5, borderDash:[5,4], pointRadius:0},
+    {label:'Scenario', data:s.g, borderColor:css('--accent'), borderWidth:2.4, pointRadius:0, fill:false}]}, options:o, plugins:[bandPlugin]});
+  const d = (a, b2, better, unit='') => { const x = a - b2; if (!x) return '<span class="delta">no change</span>';
+    const good = better === 'lower' ? x < 0 : x > 0; return `<span class="delta ${good?'good':'bad'}">${x>0?'+':''}${unit==='%'?Math.round(x*100)+' pts':x+unit}</span>`; };
+  document.getElementById('wiOut').innerHTML = `
+    <div class="kpi"><div class="l">Post-dinner peak</div><div class="v">${s.dinner_peak} <span style="font-size:13px">mg/dL</span></div>${d(s.dinner_peak, b.dinner_peak, 'lower')}</div>
+    <div class="kpi"><div class="l">Minutes above 180 after dinner</div><div class="v">${s.dinner_mins_above}</div>${d(s.dinner_mins_above, b.dinner_mins_above, 'lower', ' min')}</div>
+    <div class="kpi"><div class="l">24-h time in range</div><div class="v">${pct(s.tir)}</div>${d(s.tir, b.tir, 'higher', '%')}</div>`;
+}
+
+document.querySelectorAll('.seg').forEach(s => s.addEventListener('click', e => {
+  const btn = e.target.closest('button'); if (!btn || btn.disabled) return;
+  wi[s.dataset.k] = btn.dataset.v; s.querySelectorAll('button').forEach(b => b.classList.toggle('on', b===btn)); whatIf(); }));
+
+function modelView(){
+  const m = D.model;
+  document.getElementById('mTask').textContent = `${m.n_test} patients never seen in training · spike prevalence ${pct(m.prevalence)}`;
+  document.getElementById('mTable').innerHTML = `<tr><th>Model</th><th>AUROC</th><th>AUPRC</th><th>Spike episodes caught</th><th>Median warning</th><th>False alerts / patient-day</th></tr>`
+    + m.table.map(r => `<tr class="${r.name.includes('GlucoTwin')?'best':''}"><td>${r.name}</td><td class="mono">${r.auroc.toFixed(3)}</td><td class="mono">${r.auprc.toFixed(3)}</td><td class="mono">${pct(r.sens)}</td><td class="mono">${Math.round(r.lead)} min</td><td class="mono">${r.fa.toFixed(2)}</td></tr>`).join('');
+  const t = m.table, cg = t.find(r => r.name.startsWith('M1')), gt = t.find(r => r.name.includes('GlucoTwin'));
+  document.getElementById('mNote').innerHTML = `<b>Task:</b> ${m.task}. Alert threshold fixed on training patients (80% sensitivity). `
+    + `Versus a CGM-only model, GlucoTwin cuts false alerts from <b>${cg.fa}</b> to <b>${gt.fa}</b> per patient-day (${Math.round(cg.fa/gt.fa*10)/10}× fewer) while warning a median <b>${Math.round(gt.lead)} minutes</b> before the spike.`;
+}
+
+document.getElementById('tab-pt').onclick = () => { document.getElementById('view-pt').classList.remove('hidden'); document.getElementById('view-model').classList.add('hidden');
+  document.getElementById('tab-pt').classList.add('on'); document.getElementById('tab-model').classList.remove('on'); };
+document.getElementById('tab-model').onclick = () => { document.getElementById('view-model').classList.remove('hidden'); document.getElementById('view-pt').classList.add('hidden');
+  document.getElementById('tab-model').classList.add('on'); document.getElementById('tab-pt').classList.remove('on'); };
+
+modelView();
+select([...D.patients].sort((a,b) => nowRisk(b) - nowRisk(a) || maxRecent(b) - maxRecent(a))[0].id);
+</script>
+</body>
+</html>

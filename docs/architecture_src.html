@@ -1,0 +1,69 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>GlucoTwin Architecture</title>
+<style>
+@page{size:A4 landscape;margin:0}
+body{margin:0;font-family:"DejaVu Sans",Arial,sans-serif;color:#14212B;background:#fff}
+.page{width:1123px;height:794px;padding:26px 30px;box-sizing:border-box;position:relative}
+h1{margin:0;font-size:24px;letter-spacing:-.01em}
+.sub{color:#5D6B78;font-size:13px;margin-top:3px}
+.cols{display:grid;grid-template-columns:230px 32px 1fr 32px 250px;margin-top:18px;height:640px}
+.col{display:flex;flex-direction:column;gap:10px}
+.lane{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#5D6B78;margin-bottom:2px}
+.box{border:1.5px solid #CBD5DD;border-radius:10px;padding:9px 11px;font-size:11.5px;line-height:1.35;background:#fff}
+.box b{display:block;font-size:12.5px;margin-bottom:2px}
+.ehr{border-color:#0E7C86;background:#E9F6F7}
+.wear{border-color:#3B82C4;background:#EAF2FB}
+.twin{border-color:#7A5AF8;background:#F2EFFF}
+.ml{border-color:#D64933;background:#FCEDEA}
+.out{border-color:#2E9E6A;background:#EAF7F0}
+.gov{border-color:#9AA0A6;background:#F5F6F7}
+.arrow{display:flex;align-items:center;justify-content:center;color:#5D6B78;font-size:22px}
+.core{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start}
+.core .wide{grid-column:1/3}
+.step{display:inline-block;width:18px;height:18px;border-radius:50%;background:#7A5AF8;color:#fff;font-size:11px;text-align:center;line-height:18px;margin-right:6px;font-weight:700}
+.eq{font-family:"DejaVu Sans Mono",monospace;font-size:10.5px;background:#fff;border:1px dashed #B8A9FF;border-radius:6px;padding:6px 8px;margin-top:5px;line-height:1.45}
+.foot{position:absolute;bottom:16px;left:30px;right:30px;display:flex;justify-content:space-between;font-size:10.5px;color:#5D6B78}
+.foot span:last-child{white-space:nowrap;margin-left:24px}
+.loop{font-size:11px;color:#7A5AF8;font-weight:600;text-align:center;margin-top:-2px}
+</style></head>
+<body><div class="page">
+<h1>GlucoTwin — System Architecture</h1>
+<div class="sub">Patient-specific digital twin for Type 2 Diabetes that fuses EHR + wearable streams to forecast glucose spikes (&gt;180 mg/dL) 2 hours ahead</div>
+<div class="cols">
+  <div class="col">
+    <div class="lane">1 · Data streams (synthetic, DPDP/HIPAA-safe)</div>
+    <div class="box ehr"><b>Static / historical — EHR</b>Demographics, ICD-10 diagnoses (E11.9, R73.03, I10), LOINC labs (HbA1c, FPG, fasting insulin, lipids, eGFR), medications, genetic markers (TCF7L2, KCNQ1, FTO)<br><i>Synthea-style generator · FHIR R4 bundles</i></div>
+    <div class="box wear"><b>Dynamic / real-time — wearables</b>CGM glucose (5-min), heart rate, HRV (RMSSD), steps, sleep stages (W/L/D/R)<br><i>Apple Health / Google Fit / Libre-like schema</i></div>
+    <div class="box wear"><b>Patient app</b>Meal log (incomplete, noisy carb estimates)</div>
+    <div class="box gov"><b>Ingestion &amp; interoperability</b>FHIR R4 adapter (ABDM-ready) · 5-min resampling · unit harmonisation · data-quality checks<br><i>Swap-in: MIMIC-IV, Synthea, OhioT1DM</i></div>
+  </div>
+  <div class="arrow">➜</div>
+  <div class="col">
+    <div class="lane">2 · Digital twin engine (one virtual patient per patient)</div>
+    <div class="core">
+      <div class="box twin wide"><b><span class="step">M</span>Mechanistic core — extended Bergman minimal model</b>
+        Glucose–insulin kinetics + 2-compartment gut absorption + exercise uptake; sleep modulates insulin sensitivity
+        <div class="eq">dG/dt = −(S<sub>G</sub> + X + E)·G + S<sub>G</sub>·G<sub>b</sub> + Ra/V &nbsp;&nbsp; dX/dt = −p₂X + p₂S<sub>I</sub>(I − I<sub>b</sub>)<br>dI/dt = −n(I − I<sub>b</sub>) + γ·(G − h)⁺ &nbsp;&nbsp; Ra = f·k<sub>abs</sub>·Q₂ &nbsp;&nbsp; dE/dt = −E/τ + k<sub>ex</sub>·activity</div></div>
+      <div class="box twin"><b><span class="step">1</span>Initialise</b>EHR → prior S<sub>I</sub> (HOMA-IR, BMI), β-cell γ (diagnosis, TCF7L2/KCNQ1, sulfonylurea/DPP-4i), G<sub>b</sub> (FPG)</div>
+      <div class="box twin"><b><span class="step">2</span>Calibrate</b>3 onboarding days · MAP grid search on S<sub>I</sub>, γ · robust Huber loss vs CGM · G<sub>b</sub> from night CGM</div>
+      <div class="box twin"><b><span class="step">3</span>Synchronise (every 5 min)</b>State observer pulls virtual G to CGM · unlogged-meal detector injects carbs into gut state</div>
+      <div class="box twin"><b><span class="step">4</span>Forecast (every 15 min)</b>Run twin 2 h ahead: "no further meal" and "habitual routine" (learned meal-time profile)</div>
+      <div class="box twin wide"><b><span class="step">5</span>What-if simulation</b>Counterfactuals from the live twin state: dinner carbs −25/−50%, post-meal walk 15/30 min, short sleep, missed metformin → 24-h glucose curve, peak, minutes &gt;180, TIR</div>
+      <div class="box ml wide"><b>Hybrid ML risk layer — gradient-boosted trees (scikit-learn HistGradientBoosting)</b>
+        58 fused features: CGM dynamics · HR/HRV/steps/sleep · meal log &amp; time context · EHR · <u>twin forecasts &amp; personalised parameters</u><br>
+        Output: P(CGM &gt; 180 within 120 min) · alert threshold set on training patients · patient-level hold-out evaluation · ablation M1→M4 · group explanations (log-odds)</div>
+    </div>
+    <div class="loop">↻ continuous loop: new CGM / wearable sample → synchronise → forecast → risk</div>
+  </div>
+  <div class="arrow">➜</div>
+  <div class="col">
+    <div class="lane">3 · Clinician &amp; patient layer</div>
+    <div class="box out"><b>Doctor dashboard (conceptual UI, working)</b>Patient list ranked by live risk · 72-h CGM + twin + risk timeline · alert explanation by data stream · twin physiology (prior vs calibrated) · what-if simulator · HR/HRV, steps, sleep</div>
+    <div class="box out"><b>Alerts &amp; nudges</b>"Spike likely in ~85 min" → suggested action (smaller portion, walk after meal) · escalation to care team</div>
+    <div class="box out"><b>Outcomes tracked</b>Time-in-range, GMI, CV, spikes/day, false alerts per patient-day</div>
+    <div class="box gov"><b>Governance &amp; safety</b>Synthetic data only · DPDP Act 2023 consent &amp; purpose limitation · de-identification · human-in-the-loop (decision support, not autonomous) · model card &amp; limitations · CDSCO SaMD pathway for clinical use</div>
+    <div class="box gov"><b>Tech stack</b>Python 3 · NumPy · pandas · SciPy · scikit-learn · Matplotlib · HTML/JS + Chart.js · FHIR R4 JSON · MIT license</div>
+  </div>
+</div>
+<div class="foot"><span>Held-out results (30 unseen patients): AUROC 0.942 · 77% of spike episodes flagged · median 85-min warning · 0.79 false alerts/patient-day (4.6× fewer than CGM-only)</span><span>Digital Twin Challenge 2026 · Happiest Health</span></div>
+</div></body></html>

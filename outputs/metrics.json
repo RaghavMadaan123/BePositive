@@ -1,0 +1,133 @@
+{
+  "task": "Predict CGM > 180 mg/dL within the next 120 min (onset), 15-min cadence",
+  "n_patients": 100,
+  "n_train_patients": 70,
+  "n_test_patients": 30,
+  "n_train_samples": 55980,
+  "n_test_samples": 23443,
+  "prevalence": 0.3100361356282185,
+  "models": {
+    "M0 Rule (CGM>140 & rising)": {
+      "auroc": 0.5460434294757759,
+      "auprc": 0.37642790045952523,
+      "brier": 0.297999402806808,
+      "events": 1410,
+      "event_sensitivity": 0.5368794326241135,
+      "median_lead_min": 10.0,
+      "false_alerts_per_patient_day": 0.40162232938396186
+    },
+    "M1 CGM only": {
+      "auroc": 0.7521447986996197,
+      "auprc": 0.6392509513383353,
+      "brier": 0.17659141615157034,
+      "threshold": 0.3108697975569986,
+      "events": 1410,
+      "event_sensitivity": 0.8687943262411347,
+      "median_lead_min": 90.0,
+      "false_alerts_per_patient_day": 3.608469325839108
+    },
+    "M2 + wearables & context": {
+      "auroc": 0.9305385459272252,
+      "auprc": 0.8713535599659193,
+      "brier": 0.10127848397578396,
+      "threshold": 0.6386149580313258,
+      "events": 1410,
+      "event_sensitivity": 0.7914893617021277,
+      "median_lead_min": 80.0,
+      "false_alerts_per_patient_day": 0.9871938172643948
+    },
+    "M3 + EHR (data fusion)": {
+      "auroc": 0.9270734075144424,
+      "auprc": 0.8644643582022321,
+      "brier": 0.10420213710524093,
+      "threshold": 0.677206641759521,
+      "events": 1410,
+      "event_sensitivity": 0.7801418439716312,
+      "median_lead_min": 75.0,
+      "false_alerts_per_patient_day": 0.8339028518506689
+    },
+    "M4 GlucoTwin (full)": {
+      "auroc": 0.9417959249920467,
+      "auprc": 0.8881332138989553,
+      "brier": 0.09256199308474217,
+      "threshold": 0.7041791728434309,
+      "events": 1410,
+      "event_sensitivity": 0.7695035460992907,
+      "median_lead_min": 85.0,
+      "false_alerts_per_patient_day": 0.7940472008431002
+    }
+  },
+  "subgroups_full_model": {
+    "At-risk": {
+      "n": 4891,
+      "auroc": 0.9339178025933209,
+      "prevalence": 0.2277652831731752
+    },
+    "Prediabetes": {
+      "n": 6517,
+      "auroc": 0.9384499250039312,
+      "prevalence": 0.2487340800982047
+    },
+    "T2D": {
+      "n": 12035,
+      "auroc": 0.9432390314485564,
+      "prevalence": 0.40481927710843374
+    }
+  },
+  "group_importance_auroc_drop": {
+    "CGM history": 0.030373306032776104,
+    "Wearables (HR, HRV, steps, sleep)": 0.006136416077333839,
+    "Context & meal log": 0.1649168171204565,
+    "EHR (static)": 0.0007613338635921174,
+    "Digital twin": 0.10841928704411492
+  },
+  "top_features_auroc_drop": {
+    "hour_sin": 0.11078683195271588,
+    "hour_cos": 0.03876584272346184,
+    "twin_fc_habit_mean": 0.02482308224836316,
+    "twin_fc_habit_max": 0.017620774965215635,
+    "twin_fc_nomeal_max": 0.0076311889917533016,
+    "weekend": 0.005338695269206939,
+    "hrs_since_high": 0.005219116424486803,
+    "mean_2h": 0.004873910852971064,
+    "tir_24h": 0.0037780772040536537,
+    "twin_meal_prob_2h": 0.0034625816419270317,
+    "awake_now": 0.0015368849226991,
+    "steps_120": 0.001493453022971547,
+    "mean_24h": 0.0012181684933908477,
+    "mins_since_logged_meal": 0.001197407181995902,
+    "twin_residual": 0.0011229619838389882
+  },
+  "test_patients": [
+    "GT-1036",
+    "GT-1025",
+    "GT-1071",
+    "GT-1099",
+    "GT-1038",
+    "GT-1077",
+    "GT-1018",
+    "GT-1059",
+    "GT-1019",
+    "GT-1073",
+    "GT-1047",
+    "GT-1065",
+    "GT-1005",
+    "GT-1033",
+    "GT-1089",
+    "GT-1008",
+    "GT-1027",
+    "GT-1014",
+    "GT-1055",
+    "GT-1032",
+    "GT-1090",
+    "GT-1050",
+    "GT-1075",
+    "GT-1051",
+    "GT-1003",
+    "GT-1030",
+    "GT-1034",
+    "GT-1001",
+    "GT-1095",
+    "GT-1023"
+  ]
+}
